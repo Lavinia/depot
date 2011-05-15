@@ -13,14 +13,19 @@ class CartsController < ApplicationController
   # GET /carts/1
   # GET /carts/1.xml
   def show
-    @cart = Cart.find(params[:id])
-
-    respond_to do |format|
-      format.html # show.html.erb
-      format.xml  { render :xml => @cart }
+    begin
+      @cart = Cart.find(params[:id])
+    rescue ActiveRecord::RecordNotFound                     # rescue catches exception from cart.find
+      logger.error "Attempt to access invalid cart #{params[:id]}"    #log the error and his message
+      redirect_to store_url, :notice => 'invalid cart'            #redirect to catalog display.
+    else
+      respond_to do |format|
+        format.html # show.html.erb
+        format.xml  { render :xml => @cart }
+      end
     end
   end
-
+  
   # GET /carts/new
   # GET /carts/new.xml
   def new
@@ -72,11 +77,12 @@ class CartsController < ApplicationController
   # DELETE /carts/1
   # DELETE /carts/1.xml
   def destroy
-    @cart = Cart.find(params[:id])
+    @cart = current_cart
     @cart.destroy
+    session[:cart_id] = nil
 
     respond_to do |format|
-      format.html { redirect_to(carts_url) }
+      format.html { redirect_to(store_url, :notice => 'Your cart is currently empty') }
       format.xml  { head :ok }
     end
   end
